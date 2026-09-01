@@ -3,7 +3,10 @@ package ru.practicum.shareit.item;
 import org.springframework.stereotype.Repository;
 import ru.practicum.shareit.item.model.Item;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -28,8 +31,20 @@ public class InMemoryItemRepository implements ItemRepository {
     @Override
     public List<Item> findByOwnerId(Long ownerId) {
         return items.values().stream()
-                .filter(item -> item.getOwnerId().equals(ownerId))
+                .filter(item -> item.getOwnerId() != null && item.getOwnerId().equals(ownerId))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Item> findByRequestId(Long requestId) {
+        return items.values().stream()
+                .filter(item -> item.getRequestId() != null && item.getRequestId().equals(requestId))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    public List<Item> findAll() {
+        return new java.util.ArrayList<>(items.values());
     }
 
     @Override
@@ -41,7 +56,7 @@ public class InMemoryItemRepository implements ItemRepository {
         return items.values().stream()
                 .filter(Item::getAvailable)
                 .filter(item -> item.getName().toLowerCase().contains(lowerText)
-                || item.getDescription().toLowerCase().contains(lowerText))
+                        || item.getDescription().toLowerCase().contains(lowerText))
                 .collect(Collectors.toList());
     }
 

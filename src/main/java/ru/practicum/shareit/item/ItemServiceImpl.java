@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.request.ItemRequestRepository;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.util.List;
@@ -13,18 +14,29 @@ import java.util.stream.Collectors;
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
+    private final ItemRequestRepository itemRequestRepository;  // ← НОВОЕ
     private final ItemMapper itemMapper;
 
-    public ItemServiceImpl(ItemRepository itemRepository, UserRepository userRepository, ItemMapper itemMapper) {
+    public ItemServiceImpl(ItemRepository itemRepository,
+                           UserRepository userRepository,
+                           ItemRequestRepository itemRequestRepository,  // ← НОВОЕ
+                           ItemMapper itemMapper) {
         this.itemRepository = itemRepository;
         this.userRepository = userRepository;
+        this.itemRequestRepository = itemRequestRepository;  // ← НОВОЕ
         this.itemMapper = itemMapper;
     }
 
     @Override
     public ItemDto create(Long ownerId, ItemDto itemDto) {
         userRepository.findById(ownerId)
-                .orElseThrow(()-> new NotFoundException("Пользователь с id " + ownerId + "не найден!"));
+                .orElseThrow(() -> new NotFoundException("Пользователь с id " + ownerId + " не найден"));
+
+        if (itemDto.getRequestId() != null) {
+            itemRequestRepository.findById(itemDto.getRequestId())
+                    .orElseThrow(() -> new NotFoundException(
+                            "Запрос с id " + itemDto.getRequestId() + " не найден"));
+        }
 
         Item item = itemMapper.toModel(itemDto);
         item.setOwnerId(ownerId);

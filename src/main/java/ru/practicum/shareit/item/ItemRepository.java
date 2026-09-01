@@ -12,6 +12,10 @@ public interface ItemRepository {
 
     List<Item> findByOwnerId(Long ownerId);
 
+    List<Item> findByRequestId(Long requestId);
+
+    List<Item> findAll();
+
     List<Item> search(String text);
 
     Item update(Item item);
