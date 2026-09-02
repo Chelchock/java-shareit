@@ -22,7 +22,7 @@ public class ErrorHandler {
     }
 
     @ExceptionHandler(ValidationException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.CONFLICT)
     public Map<String, String> handleValidation(ValidationException e) {
         log.warn(e.getMessage());
         return Map.of("error", e.getMessage());

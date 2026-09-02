@@ -1,6 +1,7 @@
 package ru.practicum.shareit.user;
 
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.exception.NotFoundException;
 
@@ -19,6 +20,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto create(UserDto userDto) {
+        userRepository.findByEmail(userDto.getEmail()).ifPresent(existing -> {
+            throw new ValidationException("Пользователь с email " + userDto.getEmail() + " уже существует");
+        });
+
         User user = userMapper.toModel(userDto);
         return userMapper.toDto(userRepository.create(user));
     }
