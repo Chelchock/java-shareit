@@ -21,4 +21,8 @@ public interface ItemRepository {
     Item update(Item item);
 
     void deleteById(Long id);
+
+    Comment createComment(Comment comment);
+
+    List<Comment> findCommentsByItemId(Long itemId);
 }
