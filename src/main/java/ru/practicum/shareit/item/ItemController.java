@@ -27,13 +27,15 @@ public class ItemController {
     }
 
     @PostMapping
-    public ItemDto create(@RequestHeader(USER_ID_HEADER) Long userId, @Valid @RequestBody ItemDto itemDto) {
+    public ItemDto create(@RequestHeader(USER_ID_HEADER) Long userId,
+                          @Valid @RequestBody ItemDto itemDto) {
         return itemService.create(userId, itemDto);
     }
 
     @PatchMapping("/{itemId}")
     public ItemDto update(@RequestHeader(USER_ID_HEADER) Long userId,
-    @PathVariable Long itemId, @RequestBody ItemDto itemDto) {
+                          @PathVariable Long itemId,
+                          @RequestBody ItemDto itemDto) {
         return itemService.update(userId, itemId, itemDto);
     }
 
@@ -43,6 +45,11 @@ public class ItemController {
         return itemService.findById(userId, itemId);
     }
 
+    @GetMapping
+    public List<ItemDto> findByOwnerId(@RequestHeader(USER_ID_HEADER) Long userId) {
+        return itemService.findByOwnerId(userId);
+    }
+
     @GetMapping("/search")
     public List<ItemDto> search(@RequestParam String text) {
         return itemService.search(text);
@@ -50,11 +57,8 @@ public class ItemController {
 
     @PostMapping("/{itemId}/comment")
     public CommentDto createComment(@RequestHeader(USER_ID_HEADER) Long userId,
-                                    @PathVariable Long itemId, @Valid @RequestBody CommentDto commentDto) {
+                                    @PathVariable Long itemId,
+                                    @Valid @RequestBody CommentDto commentDto) {
         return itemService.createComment(userId, itemId, commentDto);
-    }
-
-    public List<CommentDto> findCommments(@PathVariable Long itemId) {
-        return itemService.findCommentsByItemId(itemId);
     }
 }
