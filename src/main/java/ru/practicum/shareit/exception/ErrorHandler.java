@@ -7,6 +7,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import jakarta.validation.ConstraintViolationException;
+
 
 import java.util.Map;
 
@@ -35,6 +37,24 @@ public class ErrorHandler {
                 .findFirst()
                 .map(FieldError::getDefaultMessage)
                 .orElse("Ошибка валидации");
+        log.warn(message);
+        return Map.of("error", message);
+    }
+
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, String> handleOther(Exception e) {
+        log.error("Непредвиденная ошибка: {}", e.getMessage(), e);
+        return Map.of("error", "Произошла внутренняя ошибка сервера");
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleConstraintViolation(ConstraintViolationException e) {
+        String message = e.getConstraintViolations().stream()
+                .findFirst()
+                .map(violation -> violation.getMessage())
+                .orElse("Ошибка валидации параметра");
         log.warn(message);
         return Map.of("error", message);
     }

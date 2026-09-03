@@ -2,7 +2,9 @@ package ru.practicum.shareit.request;
 
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.item.ItemMapper;
 import ru.practicum.shareit.item.ItemRepository;
+import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.user.UserRepository;
@@ -19,15 +21,18 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     private final ItemRequestMapper itemRequestMapper;
+    private final ItemMapper itemMapper;
 
     public ItemRequestServiceImpl(ItemRequestRepository itemRequestRepository,
                                   ItemRepository itemRepository,
                                   UserRepository userRepository,
-                                  ItemRequestMapper itemRequestMapper) {
+                                  ItemRequestMapper itemRequestMapper,
+                                  ItemMapper itemMapper) {
         this.itemRequestRepository = itemRequestRepository;
         this.itemRepository = itemRepository;
         this.userRepository = userRepository;
         this.itemRequestMapper = itemRequestMapper;
+        this.itemMapper = itemMapper;
     }
 
     @Override
@@ -51,7 +56,10 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         ItemRequest request = itemRequestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundException("Запрос с id " + requestId + " не найден"));
 
-        List<Item> items = itemRepository.findByRequestId(requestId);
+        List<ItemDto> items = itemRepository.findByRequestId(requestId).stream()
+                .map(itemMapper::toDto)
+                .collect(Collectors.toList());
+
         return itemRequestMapper.toDtoWithItems(request, items);
     }
 
@@ -87,10 +95,13 @@ public class ItemRequestServiceImpl implements ItemRequestService {
                 .map(ItemRequest::getId)
                 .collect(Collectors.toSet());
 
-        Map<Long, List<Item>> itemsByRequestId = itemRepository.findAll()
+        Map<Long, List<ItemDto>> itemsByRequestId = itemRepository.findAll()
                 .stream()
                 .filter(item -> item.getRequestId() != null && requestIds.contains(item.getRequestId()))
-                .collect(Collectors.groupingBy(Item::getRequestId));
+                .collect(Collectors.groupingBy(
+                        Item::getRequestId,
+                        Collectors.mapping(itemMapper::toDto, Collectors.toList())
+                ));
 
         return requests.stream()
                 .map(request -> itemRequestMapper.toDtoWithItems(
