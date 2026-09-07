@@ -32,28 +32,27 @@ public class BookingController {
     }
 
     @PatchMapping("/{bookingId}")
-    public BookingDto approve(@RequestHeader(USER_ID_HEADER) Long ownerId,
+    public BookingDto approve(@RequestHeader(USER_ID_HEADER) Long userId,
                               @PathVariable Long bookingId,
                               @RequestParam Boolean approved) {
-        return bookingService.approve(ownerId, bookingId, approved);
+        return bookingService.approve(userId, bookingId, approved);
     }
 
     @GetMapping("/{bookingId}")
-    public BookingDto findById(@RequestHeader(USER_ID_HEADER) Long userId,
-                               @PathVariable Long bookingId) {
-        return bookingService.findById(userId, bookingId);
+    public BookingDto getById(@RequestHeader(USER_ID_HEADER) Long userId,
+                              @PathVariable Long bookingId) {
+        return bookingService.getById(userId, bookingId);
     }
 
     @GetMapping
-    public List<BookingDto> findByBookerId(@RequestHeader(USER_ID_HEADER) Long bookerId,
-                                           @RequestParam(defaultValue = "ALL") BookingState state) {
-        return bookingService.findByBookerId(bookerId, state);
+    public List<BookingDto> getByBooker(@RequestHeader(USER_ID_HEADER) Long userId,
+                                        @RequestParam(defaultValue = "ALL") BookingState state) {
+        return bookingService.getByBooker(userId, state);
     }
 
     @GetMapping("/owner")
-    public List<BookingDto> findByOwnerId(@RequestHeader(USER_ID_HEADER) Long ownerId,
-                                          @RequestParam Long itemId,
-                                          @RequestParam(defaultValue = "ALL") BookingState state) {
-        return bookingService.findByItemId(ownerId, itemId, state);
+    public List<BookingDto> getByOwner(@RequestHeader(USER_ID_HEADER) Long userId,
+                                       @RequestParam(defaultValue = "ALL") BookingState state) {
+        return bookingService.getByOwner(userId, state);
     }
 }

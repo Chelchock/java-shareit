@@ -2,16 +2,13 @@ package ru.practicum.shareit.request;
 
 import org.springframework.stereotype.Repository;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Repository
-public class InMemoryRequestRepository implements ItemRequestRepository {
+public class InMemoryItemRequestRepository implements ItemRequestRepository {
     private final Map<Long, ItemRequest> requests = new ConcurrentHashMap<>();
     private final AtomicLong idGenerator = new AtomicLong(0);
 

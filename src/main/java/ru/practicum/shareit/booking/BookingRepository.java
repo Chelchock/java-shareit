@@ -1,16 +1,20 @@
 package ru.practicum.shareit.booking;
 
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-public interface BookingRepository {
-    Booking create(Booking booking);
+public interface BookingRepository extends JpaRepository<Booking, Long> {
+    List<Booking> findByBookerIdOrderByStartDesc(Long bookerId);
 
-    Optional<Booking> findById(Long id);
+    List<Booking> findByItemOwnerIdOrderByStartDesc(Long ownerId);
 
-    List<Booking> findByBookerId(Long bookerId, BookingState state);
+    Optional<Booking> findTopByItemIdAndEndBeforeOrderByStartDesc(Long itemId, LocalDateTime time);
 
-    List<Booking> findByItemId(Long itemId, BookingState state);
+    Optional<Booking> findTopByItemIdAndStartAfterOrderByStartAsc(Long itemId, LocalDateTime time);
 
-    Booking update(Booking booking);
+    boolean existsByBookerIdAndItemIdAndStatusAndEndBefore(
+            Long bookerId, Long itemId, BookingStatus status, LocalDateTime time);
 }

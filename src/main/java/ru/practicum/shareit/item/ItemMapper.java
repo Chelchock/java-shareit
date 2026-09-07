@@ -8,9 +8,7 @@ import ru.practicum.shareit.item.model.Item;
 public class ItemMapper {
 
     public ItemDto toDto(Item item) {
-        if (item == null) {
-            return null;
-        }
+        if (item == null) return null;
         ItemDto dto = new ItemDto();
         dto.setId(item.getId());
         dto.setName(item.getName());
@@ -21,9 +19,7 @@ public class ItemMapper {
     }
 
     public Item toModel(ItemDto dto) {
-        if (dto == null) {
-            return null;
-        }
+        if (dto == null) return null;
         Item item = new Item();
         item.setId(dto.getId());
         item.setName(dto.getName());
