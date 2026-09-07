@@ -56,7 +56,7 @@ public class BookingServiceImpl implements BookingService {
             throw new BadRequestException("Дата начала должна быть раньше даты окончания");
         }
         LocalDateTime now = LocalDateTime.now();
-        if (!bookingDto.getStart().isAfter(now) || !bookingDto.getEnd().isAfter(now)) {
+        if (!bookingDto.getEnd().isAfter(now)) {
             throw new BadRequestException("Даты бронирования должны быть в будущем");
         }
 
@@ -72,7 +72,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    public BookingDto approve(Long userId, Long bookingId, Boolean approve) {
+    public BookingDto approve(Long userId, Long bookingId, Boolean approved) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Бронирование с id " +  bookingId + " не найдено"));
 
@@ -84,7 +84,7 @@ public class BookingServiceImpl implements BookingService {
             throw new BadRequestException("Изменить статус можно только у бронирования в статусе WAITING");
         }
 
-        booking.setStatus(approve ? BookingStatus.APPROVED : BookingStatus.REJECTED);
+        booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
         return bookingMapper.toDto(bookingRepository.save(booking));
     }
 
