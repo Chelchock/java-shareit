@@ -10,14 +10,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
+import ru.practicum.shareit.util.Constants;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/requests")
 public class ItemRequestController {
-    private static final String USER_ID_HEADER = "X-Sharer-User-Id";
-
     private final ItemRequestService itemRequestService;
 
     public ItemRequestController(ItemRequestService itemRequestService) {
@@ -25,25 +24,25 @@ public class ItemRequestController {
     }
 
     @PostMapping
-    public ItemRequestDto create(@RequestHeader(USER_ID_HEADER) Long requesterId,
+    public ItemRequestDto create(@RequestHeader(Constants.USER_ID_HEADER) Long requesterId,
                                  @Valid @RequestBody ItemRequestDto requestDto) {
         return itemRequestService.create(requesterId, requestDto);
     }
 
     @GetMapping
-    public List<ItemRequestDto> findByRequesterId(@RequestHeader(USER_ID_HEADER) Long requesterId) {
+    public List<ItemRequestDto> findByRequesterId(@RequestHeader(Constants.USER_ID_HEADER) Long requesterId) {
         return itemRequestService.findByRequesterId(requesterId);
     }
 
     @GetMapping("/all")
-    public List<ItemRequestDto> findAll(@RequestHeader(USER_ID_HEADER) Long userId,
+    public List<ItemRequestDto> findAll(@RequestHeader(Constants.USER_ID_HEADER) Long userId,
                                         @RequestParam(defaultValue = "0") Integer from,
                                         @RequestParam(defaultValue = "10") Integer size) {
         return itemRequestService.findAll(userId, from, size);
     }
 
     @GetMapping("/{requestId}")
-    public ItemRequestDto findById(@RequestHeader(USER_ID_HEADER) Long userId,
+    public ItemRequestDto findById(@RequestHeader(Constants.USER_ID_HEADER) Long userId,
                                    @PathVariable Long requestId) {
         return itemRequestService.findById(userId, requestId);
     }
