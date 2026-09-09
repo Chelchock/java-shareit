@@ -16,7 +16,7 @@ public class ItemRequestMapper {
         ItemRequestDto dto = new ItemRequestDto();
         dto.setId(request.getId());
         dto.setDescription(request.getDescription());
-        dto.setRequesterId(request.getRequesterId());
+        dto.setRequesterId(request.getRequester().getId());
         dto.setCreated(request.getCreated());
         return dto;
     }
@@ -36,7 +36,6 @@ public class ItemRequestMapper {
         ItemRequest request = new ItemRequest();
         request.setId(dto.getId());
         request.setDescription(dto.getDescription());
-        request.setRequesterId(dto.getRequesterId());
         request.setCreated(dto.getCreated());
         return request;
     }

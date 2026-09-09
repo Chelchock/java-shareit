@@ -1,14 +1,12 @@
 package ru.practicum.shareit.request;
 
+import org.springframework.data.jpa.repository.JpaRepository;
+
 import java.util.List;
 import java.util.Optional;
 
-public interface ItemRequestRepository {
-    ItemRequest create(ItemRequest request);
+public interface ItemRequestRepository extends JpaRepository<ItemRequest, Long> {
+    List<ItemRequest> findByRequesterIdOrderByCreatedDesc(Long requesterId);
 
-    Optional<ItemRequest> findById(Long id);
-
-    List<ItemRequest> findByRequesterId(Long requesterId);
-
-    List<ItemRequest> findAllExceptRequester(Long requesterId);
-}
+    List<ItemRequest> findByRequesterIdNotOrderByCreatedDesc(Long requesterId);
+    }

@@ -26,4 +26,5 @@ public class ItemDto {
     private List<CommentDto> comments = new ArrayList<>();
     private BookingShortDto lastBooking;
     private BookingShortDto nextBooking;
+    private Long ownerId;
 }

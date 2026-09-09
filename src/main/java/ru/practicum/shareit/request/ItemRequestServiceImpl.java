@@ -1,12 +1,14 @@
 package ru.practicum.shareit.request;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.ItemMapper;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
+import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
@@ -36,19 +38,20 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     }
 
     @Override
+    @Transactional
     public ItemRequestDto create(Long requesterId, ItemRequestDto requestDto) {
-        userRepository.findById(requesterId)
+        User requester = userRepository.findById(requesterId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + requesterId + " не найден"));
 
         ItemRequest request = itemRequestMapper.toModel(requestDto);
-        request.setRequesterId(requesterId);
+        request.setRequester(requester);
         request.setCreated(LocalDateTime.now());
 
-        ItemRequest created = itemRequestRepository.create(request);
-        return itemRequestMapper.toDtoWithItems(created, List.of());
+        return itemRequestMapper.toDtoWithItems(itemRequestRepository.save(request), List.of());
     }
 
     @Override
+    @Transactional
     public ItemRequestDto findById(Long userId, Long requestId) {
         userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
@@ -56,7 +59,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         ItemRequest request = itemRequestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundException("Запрос с id " + requestId + " не найден"));
 
-        List<ItemDto> items = itemRepository.findByRequestId(requestId).stream()
+        List<ItemDto> items = itemRepository.findByRequestIdOrderByIdAsc(requestId).stream()
                 .map(itemMapper::toDto)
                 .collect(Collectors.toList());
 
@@ -64,12 +67,13 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ItemRequestDto> findByRequesterId(Long requesterId) {
         userRepository.findById(requesterId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + requesterId + " не найден"));
 
-        List<ItemRequest> requests = itemRequestRepository.findByRequesterId(requesterId);
-        return enrichWithItems(requests);
+        return enrichWithItems(
+                itemRequestRepository.findByRequesterIdOrderByCreatedDesc(requesterId));
     }
 
     @Override
@@ -77,13 +81,11 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
 
-        List<ItemRequest> requests = itemRequestRepository.findAllExceptRequester(userId);
+        List<ItemRequest> all = itemRequestRepository.findByRequesterIdNotOrderByCreatedDesc(userId);
 
-        int fromIndex = Math.min(from, requests.size());
-        int toIndex = Math.min(from + size, requests.size());
-        List<ItemRequest> paginatedRequests = requests.subList(fromIndex, toIndex);
-
-        return enrichWithItems(paginatedRequests);
+        int fromIndex = Math.min(from, all.size());
+        int toIndex = Math.min(from + size, all.size());
+        return enrichWithItems(all.subList(fromIndex, toIndex));
     }
 
     private List<ItemRequestDto> enrichWithItems(List<ItemRequest> requests) {
