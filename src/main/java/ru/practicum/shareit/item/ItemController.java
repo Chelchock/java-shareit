@@ -1,6 +1,8 @@
 package ru.practicum.shareit.item;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,14 +14,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.util.Constants;
 
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping("/items")
 public class ItemController {
-    private static final String USER_ID_HEADER = "X-Sharer-User-Id";
-
     private final ItemService itemService;
 
     public ItemController(ItemService itemService) {
@@ -27,26 +29,26 @@ public class ItemController {
     }
 
     @PostMapping
-    public ItemDto create(@RequestHeader(USER_ID_HEADER) Long userId,
+    public ItemDto create(@RequestHeader(Constants.USER_ID_HEADER) @Positive Long userId,
                           @Valid @RequestBody ItemDto itemDto) {
         return itemService.create(userId, itemDto);
     }
 
     @PatchMapping("/{itemId}")
-    public ItemDto update(@RequestHeader(USER_ID_HEADER) Long userId,
-                          @PathVariable Long itemId,
+    public ItemDto update(@RequestHeader(Constants.USER_ID_HEADER) @Positive Long userId,
+                          @PathVariable @Positive Long itemId,
                           @RequestBody ItemDto itemDto) {
         return itemService.update(userId, itemId, itemDto);
     }
 
     @GetMapping("/{itemId}")
-    public ItemDto findById(@RequestHeader(USER_ID_HEADER) Long userId,
-                            @PathVariable Long itemId) {
+    public ItemDto findById(@RequestHeader(Constants.USER_ID_HEADER) @Positive Long userId,
+                            @PathVariable @Positive Long itemId) {
         return itemService.findById(userId, itemId);
     }
 
     @GetMapping
-    public List<ItemDto> findByOwnerId(@RequestHeader(USER_ID_HEADER) Long userId) {
+    public List<ItemDto> findByOwnerId(@RequestHeader(Constants.USER_ID_HEADER) @Positive Long userId) {
         return itemService.findByOwnerId(userId);
     }
 
@@ -56,8 +58,8 @@ public class ItemController {
     }
 
     @PostMapping("/{itemId}/comment")
-    public CommentDto createComment(@RequestHeader(USER_ID_HEADER) Long userId,
-                                    @PathVariable Long itemId,
+    public CommentDto createComment(@RequestHeader(Constants.USER_ID_HEADER) @Positive Long userId,
+                                    @PathVariable @Positive Long itemId,
                                     @Valid @RequestBody CommentDto commentDto) {
         return itemService.createComment(userId, itemId, commentDto);
     }

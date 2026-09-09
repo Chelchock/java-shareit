@@ -20,12 +20,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto create(UserDto userDto) {
-        userRepository.findByEmail(userDto.getEmail()).ifPresent(existing -> {
+        if (userRepository.existsByEmailIgnoreCase(userDto.getEmail())) {
             throw new ValidationException("Пользователь с email " + userDto.getEmail() + " уже существует");
-        });
-
+        }
         User user = userMapper.toModel(userDto);
-        return userMapper.toDto(userRepository.create(user));
+        return userMapper.toDto(userRepository.save(user));
     }
 
     @Override
@@ -34,19 +33,17 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
 
         if (userDto.getEmail() != null) {
-            userRepository.findByEmail(userDto.getEmail()).ifPresent(existing -> {
-                if (!existing.getId().equals(user.getId())) {
+            userRepository.findByEmailIgnoreCase(userDto.getEmail()).ifPresent(existing -> {
+                if (!existing.getId().equals(userId)) {
                     throw new ValidationException("Пользователь с email " + userDto.getEmail() + " уже существует");
                 }
             });
             user.setEmail(userDto.getEmail());
         }
-
         if (userDto.getName() != null) {
             user.setName(userDto.getName());
         }
-
-        return userMapper.toDto(userRepository.update(user));
+        return userMapper.toDto(userRepository.save(user));
     }
 
     @Override

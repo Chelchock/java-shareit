@@ -18,5 +18,4 @@ public interface ItemService {
 
     CommentDto createComment(Long userId, Long itemId, CommentDto commentDto);
 
-    List<CommentDto> findCommentsByItemId(Long itemId);
 }

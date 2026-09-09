@@ -11,13 +11,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ru.practicum.shareit.booking.dto.BookingDto;
+import ru.practicum.shareit.util.Constants;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/bookings")
 public class BookingController {
-    private static final String USER_ID_HEADER = "X-Sharer-User-Id";
 
     private final BookingService bookingService;
 
@@ -26,34 +26,33 @@ public class BookingController {
     }
 
     @PostMapping
-    public BookingDto create(@RequestHeader(USER_ID_HEADER) Long bookerId,
+    public BookingDto create(@RequestHeader(Constants.USER_ID_HEADER) Long bookerId,
                              @Valid @RequestBody BookingDto bookingDto) {
         return bookingService.create(bookerId, bookingDto);
     }
 
     @PatchMapping("/{bookingId}")
-    public BookingDto approve(@RequestHeader(USER_ID_HEADER) Long ownerId,
+    public BookingDto approve(@RequestHeader(Constants.USER_ID_HEADER) Long userId,
                               @PathVariable Long bookingId,
                               @RequestParam Boolean approved) {
-        return bookingService.approve(ownerId, bookingId, approved);
+        return bookingService.approve(userId, bookingId, approved);
     }
 
     @GetMapping("/{bookingId}")
-    public BookingDto findById(@RequestHeader(USER_ID_HEADER) Long userId,
-                               @PathVariable Long bookingId) {
-        return bookingService.findById(userId, bookingId);
+    public BookingDto getById(@RequestHeader(Constants.USER_ID_HEADER) Long userId,
+                              @PathVariable Long bookingId) {
+        return bookingService.getById(userId, bookingId);
     }
 
     @GetMapping
-    public List<BookingDto> findByBookerId(@RequestHeader(USER_ID_HEADER) Long bookerId,
-                                           @RequestParam(defaultValue = "ALL") BookingState state) {
-        return bookingService.findByBookerId(bookerId, state);
+    public List<BookingDto> getByBooker(@RequestHeader(Constants.USER_ID_HEADER) Long userId,
+                                        @RequestParam(defaultValue = "ALL") BookingState state) {
+        return bookingService.getByBooker(userId, state);
     }
 
     @GetMapping("/owner")
-    public List<BookingDto> findByOwnerId(@RequestHeader(USER_ID_HEADER) Long ownerId,
-                                          @RequestParam Long itemId,
-                                          @RequestParam(defaultValue = "ALL") BookingState state) {
-        return bookingService.findByItemId(ownerId, itemId, state);
+    public List<BookingDto> getByOwner(@RequestHeader(Constants.USER_ID_HEADER) Long userId,
+                                       @RequestParam(defaultValue = "ALL") BookingState state) {
+        return bookingService.getByOwner(userId, state);
     }
 }

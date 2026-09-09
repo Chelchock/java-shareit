@@ -1,15 +1,17 @@
 package ru.practicum.shareit.booking;
 
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
-import ru.practicum.shareit.item.ItemMapper;
+import ru.practicum.shareit.exception.BadRequestException;
+import ru.practicum.shareit.exception.ForbiddenException;
+import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.user.UserMapper;
+import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,114 +21,130 @@ public class BookingServiceImpl implements BookingService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     private final BookingMapper bookingMapper;
-    private final ItemMapper itemMapper;
-    private final UserMapper userMapper;
 
     public BookingServiceImpl(BookingRepository bookingRepository,
                               ItemRepository itemRepository,
                               UserRepository userRepository,
-                              BookingMapper bookingMapper,
-                              ItemMapper itemMapper,
-                              UserMapper userMapper) {
+                              BookingMapper bookingMapper) {
         this.bookingRepository = bookingRepository;
         this.itemRepository = itemRepository;
         this.userRepository = userRepository;
         this.bookingMapper = bookingMapper;
-        this.itemMapper = itemMapper;
-        this.userMapper = userMapper;
     }
 
     @Override
+    @Transactional
     public BookingDto create(Long bookerId, BookingDto bookingDto) {
-        userRepository.findById(bookerId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + bookerId + " не найден"));
+        User booker = userRepository.findById(bookerId)
+                .orElseThrow(() -> new NotFoundException(
+                        "Пользователь с id " + bookerId + " не найден"));
 
         Item item = itemRepository.findById(bookingDto.getItemId())
-                .orElseThrow(() -> new NotFoundException("Вещь с id " + bookingDto.getItemId() + " не найдена"));
+                .orElseThrow(() -> new NotFoundException(
+                        "Вещь с id " + bookingDto.getItemId() + " не найдена"));
 
+        if (item.getOwner().getId().equals(bookerId)) {
+            throw new BadRequestException("Нельзя забронировать собственную вещь");
+        }
         if (!item.getAvailable()) {
-            throw new ValidationException("Вещь недоступна для бронирования");
+            throw new BadRequestException("Вещь недоступна для бронирования");
         }
-
-        if (item.getOwnerId().equals(bookerId)) {
-            throw new ValidationException("Нельзя забронировать свою вещь");
+        if (bookingDto.getStart() == null || bookingDto.getEnd() == null) {
+            throw new BadRequestException("Даты начала и окончания обязательны");
         }
-
         if (!bookingDto.getStart().isBefore(bookingDto.getEnd())) {
-            throw new ValidationException("Дата начала должна быть раньше даты окончания");
+            throw new BadRequestException("Дата начала должна быть раньше даты окончания");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (!bookingDto.getEnd().isAfter(now)) {
+            throw new BadRequestException("Даты бронирования должны быть в будущем");
         }
 
-        Booking booking = bookingMapper.toModel(bookingDto);
-        booking.setBookerId(bookerId);
+        Booking booking = new Booking();
+        booking.setItem(item);
+        booking.setBooker(booker);
+        booking.setStart(bookingDto.getStart());
+        booking.setEnd(bookingDto.getEnd());
         booking.setStatus(BookingStatus.WAITING);
 
-        Booking created = bookingRepository.create(booking);
-        return enrichBooking(bookingMapper.toDto(created));
+        return bookingMapper.toDto(bookingRepository.save(booking));
     }
 
     @Override
-    public BookingDto approve(Long ownerId, Long bookingId, Boolean approved) {
+    @Transactional
+    public BookingDto approve(Long userId, Long bookingId, Boolean approved) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Бронирование с id " + bookingId + " не найдено"));
+                .orElseThrow(() -> new NotFoundException("Бронирование с id " +  bookingId + " не найдено"));
 
-        Item item = itemRepository.findById(booking.getItemId())
-                .orElseThrow(() -> new NotFoundException("Вещь с id " + booking.getItemId() + " не найдена"));
-
-        if (!item.getOwnerId().equals(ownerId)) {
-            throw new NotFoundException("Только владелец вещи может подтвердить бронирование");
+        if (!booking.getItem().getOwner().getId().equals(userId)) {
+            throw new ForbiddenException("Подтвердить бронирование может только владелец вещи");
         }
 
         if (booking.getStatus() != BookingStatus.WAITING) {
-            throw new ValidationException("Можно подтвердить только ожидающее бронирование");
+            throw new BadRequestException("Изменить статус можно только у бронирования в статусе WAITING");
         }
 
         booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
-
-        return enrichBooking(bookingMapper.toDto(bookingRepository.update(booking)));
+        return bookingMapper.toDto(bookingRepository.save(booking));
     }
 
     @Override
-    public BookingDto findById(Long userId, Long bookingId) {
+    @Transactional(readOnly = true)
+    public BookingDto getById(Long userId, Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Бронирование с id " + bookingId + " не найдено"));
+                .orElseThrow(() -> new NotFoundException(
+                        "Бронирование с id " + bookingId + " не найдено"));
 
-        Item item = itemRepository.findById(booking.getItemId())
-                .orElseThrow(() -> new NotFoundException("Вещь с id " + booking.getItemId() + " не найдена"));
-
-        if (!booking.getBookerId().equals(userId) && !item.getOwnerId().equals(userId)) {
-            throw new NotFoundException("Доступ к бронированию только для арендатора или владельца вещи");
+        boolean isBooker = booking.getBooker().getId().equals(userId);
+        boolean isOwner = booking.getItem().getOwner().getId().equals(userId);
+        if (!isBooker && !isOwner) {
+            throw new NotFoundException(
+                    "Доступ к бронированию есть только у автора и владельца вещи");
         }
-
-        return enrichBooking(bookingMapper.toDto(booking));
+        return bookingMapper.toDto(booking);
     }
 
     @Override
-    public List<BookingDto> findByBookerId(Long bookerId, BookingState state) {
-        userRepository.findById(bookerId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + bookerId + " не найден"));
+    @Transactional(readOnly = true)
+    public List<BookingDto> getByBooker(Long userId, BookingState state) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(
+                        "Пользователь с id " + userId + " не найден"));
 
-        return bookingRepository.findByBookerId(bookerId, state).stream()
-                .map(booking -> enrichBooking(bookingMapper.toDto(booking)))
+        return bookingRepository.findByBookerIdOrderByStartDesc(userId).stream()
+                .filter(booking -> matches(booking, state))
+                .map(bookingMapper::toDto)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<BookingDto> findByItemId(Long ownerId, Long itemId, BookingState state) {
-        Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь с id " + itemId + " не найдена"));
+    @Transactional(readOnly = true)
+    public List<BookingDto> getByOwner(Long userId, BookingState state) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(
+                        "Пользователь с id " + userId + " не найден"));
 
-        if (!item.getOwnerId().equals(ownerId)) {
-            throw new NotFoundException("Только владелец может просматривать бронирования вещи");
-        }
-
-        return bookingRepository.findByItemId(itemId, state).stream()
-                .map(booking -> enrichBooking(bookingMapper.toDto(booking)))
+        return bookingRepository.findByItemOwnerIdOrderByStartDesc(userId).stream()
+                .filter(booking -> matches(booking, state))
+                .map(bookingMapper::toDto)
                 .collect(Collectors.toList());
     }
 
-    private BookingDto enrichBooking(BookingDto dto) {
-        itemRepository.findById(dto.getItemId()).ifPresent(item -> dto.setItem(itemMapper.toDto(item)));
-        userRepository.findById(dto.getBookerId()).ifPresent(user -> dto.setBooker(userMapper.toDto(user)));
-        return dto;
+    private boolean matches(Booking booking, BookingState state) {
+        LocalDateTime now = LocalDateTime.now();
+        switch (state) {
+            case CURRENT:
+                return booking.getStart().isBefore(now) && booking.getEnd().isAfter(now);
+            case PAST:
+                return booking.getEnd().isBefore(now);
+            case FUTURE:
+                return booking.getStart().isAfter(now);
+            case WAITING:
+                return booking.getStatus() == BookingStatus.WAITING;
+            case REJECTED:
+                return booking.getStatus() == BookingStatus.REJECTED;
+            default:
+                return true;
+        }
     }
 }

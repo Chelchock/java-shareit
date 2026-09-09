@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Repository
-public class InMemoryRequestRepository implements ItemRequestRepository {
+public class InMemoryItemRequestRepository implements ItemRequestRepository {
     private final Map<Long, ItemRequest> requests = new ConcurrentHashMap<>();
     private final AtomicLong idGenerator = new AtomicLong(0);
 
