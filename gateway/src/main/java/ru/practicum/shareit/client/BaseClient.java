@@ -42,6 +42,18 @@ public class BaseClient {
         return send(HttpMethod.PATCH, path, userId, null, body);
     }
 
+    protected <T> ResponseEntity<Object> patch(String path, T body) {
+        return send(HttpMethod.PATCH, path, null, null, body);
+    }
+
+    protected <T> ResponseEntity<Object> patch(String path, long userId, T body) {
+        return send(HttpMethod.PATCH, path, userId, null, body);
+    }
+
+    protected <T> ResponseEntity<Object> patch(String path, Long userId, Map<String, Object> parameters, T body) {
+        return send(HttpMethod.PATCH, path, userId, parameters, null);
+    }
+
     protected ResponseEntity<Object> patch(String path, long userId, Map<String, Object> parameters) {
         return send(HttpMethod.PATCH, path, userId, parameters, null);
     }
