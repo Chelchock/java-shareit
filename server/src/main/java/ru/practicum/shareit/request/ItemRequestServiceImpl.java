@@ -1,5 +1,7 @@
 package ru.practicum.shareit.request;
 
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.ItemMapper;
@@ -7,6 +9,7 @@ import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
+import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
@@ -36,19 +39,21 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     }
 
     @Override
+    @Transactional
     public ItemRequestDto create(Long requesterId, ItemRequestDto requestDto) {
-        userRepository.findById(requesterId)
+        User requester = userRepository.findById(requesterId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + requesterId + " не найден"));
 
         ItemRequest request = itemRequestMapper.toModel(requestDto);
-        request.setRequesterId(requesterId);
+        request.setRequester(requester);
         request.setCreated(LocalDateTime.now());
 
-        ItemRequest created = itemRequestRepository.create(request);
+        ItemRequest created = itemRequestRepository.save(request);
         return itemRequestMapper.toDtoWithItems(created, List.of());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ItemRequestDto findById(Long userId, Long requestId) {
         userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
@@ -56,7 +61,8 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         ItemRequest request = itemRequestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundException("Запрос с id " + requestId + " не найден"));
 
-        List<ItemDto> items = itemRepository.findByRequestId(requestId).stream()
+        List<ItemDto> items = itemRepository.findByRequestId(requestId)
+                .stream()
                 .map(itemMapper::toDto)
                 .collect(Collectors.toList());
 
@@ -64,26 +70,26 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ItemRequestDto> findByRequesterId(Long requesterId) {
         userRepository.findById(requesterId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + requesterId + " не найден"));
 
-        List<ItemRequest> requests = itemRequestRepository.findByRequesterId(requesterId);
+        List<ItemRequest> requests = itemRequestRepository.findByRequesterIdOrderByCreatedDesc(requesterId);
         return enrichWithItems(requests);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ItemRequestDto> findAll(Long userId, Integer from, Integer size) {
         userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
 
-        List<ItemRequest> requests = itemRequestRepository.findAllExceptRequester(userId);
+        List<ItemRequest> requests = itemRequestRepository.findByRequesterIdNotOrderByCreatedDesc(
+                userId,
+                PageRequest.of(from / size, size));
 
-        int fromIndex = Math.min(from, requests.size());
-        int toIndex = Math.min(from + size, requests.size());
-        List<ItemRequest> paginatedRequests = requests.subList(fromIndex, toIndex);
-
-        return enrichWithItems(paginatedRequests);
+        return enrichWithItems(requests);
     }
 
     private List<ItemRequestDto> enrichWithItems(List<ItemRequest> requests) {
@@ -95,9 +101,8 @@ public class ItemRequestServiceImpl implements ItemRequestService {
                 .map(ItemRequest::getId)
                 .collect(Collectors.toSet());
 
-        Map<Long, List<ItemDto>> itemsByRequestId = itemRepository.findAll()
+        Map<Long, List<ItemDto>> itemsByRequestId = itemRepository.findByRequestIdIn(requestIds)
                 .stream()
-                .filter(item -> item.getRequestId() != null && requestIds.contains(item.getRequestId()))
                 .collect(Collectors.groupingBy(
                         Item::getRequestId,
                         Collectors.mapping(itemMapper::toDto, Collectors.toList())

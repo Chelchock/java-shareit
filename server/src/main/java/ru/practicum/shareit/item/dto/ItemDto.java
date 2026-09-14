@@ -21,6 +21,7 @@ public class ItemDto {
     @NotNull(message = "Статус доступности должен быть указан")
     private Boolean available;
 
+    private Long ownerId;
     private Long requestId;
 
     private List<CommentDto> comments = new ArrayList<>();

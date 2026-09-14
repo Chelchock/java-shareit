@@ -13,10 +13,10 @@ public class ItemRequestMapper {
         if (request == null) {
             return null;
         }
+
         ItemRequestDto dto = new ItemRequestDto();
         dto.setId(request.getId());
         dto.setDescription(request.getDescription());
-        dto.setRequesterId(request.getRequesterId());
         dto.setCreated(request.getCreated());
         return dto;
     }
@@ -36,7 +36,6 @@ public class ItemRequestMapper {
         ItemRequest request = new ItemRequest();
         request.setId(dto.getId());
         request.setDescription(dto.getDescription());
-        request.setRequesterId(dto.getRequesterId());
         request.setCreated(dto.getCreated());
         return request;
     }
