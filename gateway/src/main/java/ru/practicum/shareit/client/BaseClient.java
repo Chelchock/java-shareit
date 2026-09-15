@@ -1,0 +1,100 @@
+package ru.practicum.shareit.client;
+
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.Map;
+
+public class BaseClient {
+    private static final String USER_ID_HEADER = "X-Sharer-User-Id";
+
+    protected final RestTemplate rest;
+
+
+    public BaseClient(RestTemplate rest) {
+        this.rest = rest;
+    }
+
+    protected ResponseEntity<Object> get(String path) {
+        return get(path, null, null);
+    }
+
+    protected ResponseEntity<Object> get(String path, long userId) {
+        return get(path, userId, null);
+    }
+
+    protected ResponseEntity<Object> get(String path, Long userId, @Nullable Map<String, Object> parameters) {
+        return send(HttpMethod.GET, path, userId, parameters, null);
+    }
+
+    protected <T> ResponseEntity<Object> post(String path, T body) {
+        return send(HttpMethod.POST, path, null, null, body);
+    }
+
+    protected <T> ResponseEntity<Object> post(String path, long userId, T body) {
+        return send(HttpMethod.POST, path, userId, null, body);
+    }
+
+    protected <T> ResponseEntity<Object> patch(String path, T body) {
+        return send(HttpMethod.PATCH, path, null, null, body);
+    }
+
+    protected <T> ResponseEntity<Object> patch(String path, long userId, T body) {
+        return send(HttpMethod.PATCH, path, userId, null, body);
+    }
+
+    protected ResponseEntity<Object> patch(String path, long userId, Map<String, Object> parameters) {
+        return send(HttpMethod.PATCH, path, userId, parameters, null);
+    }
+
+    protected ResponseEntity<Object> delete(String path) {
+        return send(HttpMethod.DELETE, path, null, null, null);
+    }
+
+    private <T> ResponseEntity<Object> send(HttpMethod method,
+                                            String path,
+                                            Long userId,
+                                            @Nullable Map<String, Object> parameters,
+                                            @Nullable T body) {
+
+        HttpEntity<T> request = new HttpEntity<>(body, headers(userId));
+
+        try {
+            ResponseEntity<Object> response;
+
+            if (parameters == null) {
+                response = rest.exchange(path, method, request, Object.class);
+            } else {
+                response = rest.exchange(path, method, request, Object.class, parameters);
+            }
+
+            return ResponseEntity
+                    .status(response.getStatusCode())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(response.getBody());
+        } catch (HttpStatusCodeException exception) {
+            return ResponseEntity
+                    .status(exception.getStatusCode())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(exception.getResponseBodyAsString());
+        }
+    }
+        private HttpHeaders headers (Long userId) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+            if (userId != null) {
+                headers.set(USER_ID_HEADER, String.valueOf(userId));
+            }
+            return headers;
+        }
+
+}
