@@ -32,7 +32,7 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<Object> findAll(@PathVariable @Positive Long userId) {
+    public ResponseEntity<Object> findAll() {
         return userClient.findAll();
     }
 

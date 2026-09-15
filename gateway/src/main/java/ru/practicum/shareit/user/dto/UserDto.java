@@ -1,5 +1,6 @@
 package ru.practicum.shareit.user.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
@@ -15,6 +16,7 @@ public class UserDto {
 
     @NotNull(groups = OnCreate.class, message = "Email не может быть пустым")
     @Pattern(regexp = ".*\\S.*", message = "Email не может быть пустым")
+    @Email(message = "Неверный формат email")
     private String email;
 
 }

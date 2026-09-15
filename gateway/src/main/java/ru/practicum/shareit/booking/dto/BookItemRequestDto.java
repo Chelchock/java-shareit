@@ -15,7 +15,7 @@ public class BookItemRequestDto {
     private Long itemId;
 
     @NotNull(message = "Дата начала должна быть указана")
-    @Future(message = "Дата начала должна быть в будушем")
+    @Future(message = "Дата начала должна быть в будущем")
     private LocalDateTime start;
 
     @NotNull(message = "Дата окончания должна быть указана")

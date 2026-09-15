@@ -35,7 +35,7 @@ public class BookingController {
         return bookingClient.create(userId, bookingDto);
     }
 
-    @PatchMapping("/bookingId")
+    @PatchMapping("/{bookingId}")
     public ResponseEntity<Object> approve(
             @RequestHeader(USER_ID_HEADER) @Positive long userId,
             @PathVariable @Positive Long bookingId,

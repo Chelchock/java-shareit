@@ -39,7 +39,7 @@ public class BaseClient {
     }
 
     protected <T> ResponseEntity<Object> post(String path, long userId, T body) {
-        return send(HttpMethod.PATCH, path, userId, null, body);
+        return send(HttpMethod.POST, path, userId, null, body);
     }
 
     protected <T> ResponseEntity<Object> patch(String path, T body) {
@@ -48,10 +48,6 @@ public class BaseClient {
 
     protected <T> ResponseEntity<Object> patch(String path, long userId, T body) {
         return send(HttpMethod.PATCH, path, userId, null, body);
-    }
-
-    protected <T> ResponseEntity<Object> patch(String path, Long userId, Map<String, Object> parameters, T body) {
-        return send(HttpMethod.PATCH, path, userId, parameters, null);
     }
 
     protected ResponseEntity<Object> patch(String path, long userId, Map<String, Object> parameters) {
