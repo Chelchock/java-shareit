@@ -98,9 +98,9 @@ public class ItemServiceImpl implements ItemService {
 
         if (item.getOwner().getId().equals(userId)) {
             LocalDateTime now = LocalDateTime.now();
-            bookingRepository.findTopByItemIdAndEndBeforeOrderByStartDesc(itemId, now)
+            bookingRepository.findTopByItemIdAndStatusAndEndBeforeOrderByStartDesc(itemId,BookingStatus.APPROVED, now)
                     .ifPresent(b -> dto.setLastBooking(bookingMapper.toShortDto(b)));
-            bookingRepository.findTopByItemIdAndStartAfterOrderByStartAsc(itemId, now)
+            bookingRepository.findTopByItemIdAndStatusAndStartAfterOrderByStartAsc(itemId, BookingStatus.APPROVED ,now)
                     .ifPresent(b -> dto.setNextBooking(bookingMapper.toShortDto(b)));
         }
         return dto;
@@ -109,31 +109,58 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional(readOnly = true)
     public List<ItemDto> findByOwnerId(Long ownerId) {
+        return findByOwnerId(ownerId, 0, Integer.MAX_VALUE);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ItemDto> findByOwnerId(Long ownerId, Integer from, Integer size) {
+        userRepository.findById(ownerId)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id " + ownerId + " не найден"));
+
         LocalDateTime now = LocalDateTime.now();
-        return itemRepository.findByOwnerId(ownerId).stream()
+        List<ItemDto> items = itemRepository.findByOwnerId(ownerId).stream()
                 .map(item -> {
                     ItemDto dto = itemMapper.toDto(item);
-                    dto.setComments(commentRepository.findByItemIdOrderByIdAsc(item.getId()).stream()
-                            .map(commentMapper::toDto)
-                            .collect(Collectors.toList()));
-                    bookingRepository.findTopByItemIdAndEndBeforeOrderByStartDesc(item.getId(), now)
+                    dto.setComments(commentRepository.findByItemIdOrderByIdAsc(item.getId())
+                            .stream().map(commentMapper::toDto).collect(Collectors.toList()));
+
+                    bookingRepository.findTopByItemIdAndStatusAndEndBeforeOrderByStartDesc(
+                                    item.getId(), BookingStatus.APPROVED, now)
                             .ifPresent(b -> dto.setLastBooking(bookingMapper.toShortDto(b)));
-                    bookingRepository.findTopByItemIdAndStartAfterOrderByStartAsc(item.getId(), now)
+
+                    bookingRepository
+                            .findTopByItemIdAndStatusAndStartAfterOrderByStartAsc(item.getId(), BookingStatus.APPROVED, now)
                             .ifPresent(b -> dto.setNextBooking(bookingMapper.toShortDto(b)));
+
                     return dto;
-                })
-                .collect(Collectors.toList());
+
+                }).collect(Collectors.toList());
+
+        return page(items, from, size);
+
+
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ItemDto> search(String text) {
+        return search(text, 0, Integer.MAX_VALUE);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ItemDto> search(String text, Integer from, Integer size) {
         if (text == null || text.isBlank()) {
             return List.of();
         }
-        return itemRepository.search(text).stream()
+
+        List<ItemDto> items = itemRepository.search(text)
+                .stream()
                 .map(itemMapper::toDto)
                 .collect(Collectors.toList());
+
+        return page(items, from, size);
     }
 
     @Override
@@ -162,5 +189,13 @@ public class ItemServiceImpl implements ItemService {
         comment.setCreated(LocalDateTime.now());
 
         return commentMapper.toDto(commentRepository.save(comment));
+    }
+
+    private List<ItemDto> page(List<ItemDto> items, Integer from, Integer size) {
+        int fromIndex = Math.min(from, items.size());
+        long requestedEnd = (long) from + size;
+        int toIndex = (int) Math.min(requestedEnd, items.size());
+
+        return items.subList(fromIndex, toIndex);
     }
 }

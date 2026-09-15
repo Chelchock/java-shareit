@@ -7,14 +7,29 @@ import java.util.List;
 import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
+
     List<Booking> findByBookerIdOrderByStartDesc(Long bookerId);
 
     List<Booking> findByItemOwnerIdOrderByStartDesc(Long ownerId);
 
-    Optional<Booking> findTopByItemIdAndEndBeforeOrderByStartDesc(Long itemId, LocalDateTime time);
+    Optional<Booking>
+    findTopByItemIdAndStatusAndEndBeforeOrderByStartDesc(
+            Long itemId,
+            BookingStatus status,
+            LocalDateTime time
+    );
 
-    Optional<Booking> findTopByItemIdAndStartAfterOrderByStartAsc(Long itemId, LocalDateTime time);
+    Optional<Booking>
+    findTopByItemIdAndStatusAndStartAfterOrderByStartAsc(
+            Long itemId,
+            BookingStatus status,
+            LocalDateTime time
+    );
 
     boolean existsByBookerIdAndItemIdAndStatusAndEndBefore(
-            Long bookerId, Long itemId, BookingStatus status, LocalDateTime time);
+            Long bookerId,
+            Long itemId,
+            BookingStatus status,
+            LocalDateTime time
+    );
 }

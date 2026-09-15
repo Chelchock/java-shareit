@@ -56,6 +56,10 @@ public class BookingServiceImpl implements BookingService {
             throw new BadRequestException("Дата начала должна быть раньше даты окончания");
         }
         LocalDateTime now = LocalDateTime.now();
+        if (bookingDto.getStart().isBefore(now)) {
+            throw new BadRequestException("Дата начала бронирования должна быть в будущем");
+        }
+
         if (!bookingDto.getEnd().isAfter(now)) {
             throw new BadRequestException("Даты бронирования должны быть в будущем");
         }
@@ -106,28 +110,53 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookingDto> getByBooker(Long userId, BookingState state) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException(
-                        "Пользователь с id " + userId + " не найден"));
-
-        return bookingRepository.findByBookerIdOrderByStartDesc(userId).stream()
-                .filter(booking -> matches(booking, state))
-                .map(bookingMapper::toDto)
-                .collect(Collectors.toList());
+    public List<BookingDto> getByBooker(Long userId, BookingState state
+    ) {
+        return getByBooker(userId, state, 0, Integer.MAX_VALUE
+        );
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookingDto> getByOwner(Long userId, BookingState state) {
+    public List<BookingDto> getByBooker(Long userId, BookingState state, Integer from, Integer size
+    ) {
         userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException(
-                        "Пользователь с id " + userId + " не найден"));
+                .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
 
-        return bookingRepository.findByItemOwnerIdOrderByStartDesc(userId).stream()
+        List<BookingDto> bookings = bookingRepository
+                .findByBookerIdOrderByStartDesc(userId)
+                .stream()
                 .filter(booking -> matches(booking, state))
                 .map(bookingMapper::toDto)
                 .collect(Collectors.toList());
+
+        return page(bookings, from, size);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookingDto> getByOwner(
+            Long userId,
+            BookingState state
+    ) {
+        return getByOwner(userId, state, 0, Integer.MAX_VALUE);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookingDto> getByOwner(Long userId, BookingState state, Integer from, Integer size
+    ) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
+
+        List<BookingDto> bookings = bookingRepository
+                .findByItemOwnerIdOrderByStartDesc(userId)
+                .stream()
+                .filter(booking -> matches(booking, state))
+                .map(bookingMapper::toDto)
+                .collect(Collectors.toList());
+
+        return page(bookings, from, size);
     }
 
     private boolean matches(Booking booking, BookingState state) {
@@ -146,5 +175,14 @@ public class BookingServiceImpl implements BookingService {
             default:
                 return true;
         }
+    }
+
+    private List<BookingDto> page(List<BookingDto> bookings, Integer from, Integer size) {
+        int fromIndex = Math.min(from, bookings.size());
+        long requestedEnd = (long) from + size;
+        int toIndex = (int) Math.min(requestedEnd, bookings.size()
+        );
+
+        return bookings.subList(fromIndex, toIndex);
     }
 }
